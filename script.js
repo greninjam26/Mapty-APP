@@ -21,61 +21,80 @@ const months = [
     "November",
     "December",
 ];
-let map, mapEvent;
 
-// map
-if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-        function (pos) {
-            // console.log(pos.coords);
-            const { latitude, longitude } = pos.coords;
-            const coords = [latitude, longitude];
-            map = L.map("map").setView(coords, 13);
+// OOP
+class APP {
+    #map;
+    #mapEvent;
+    constructor() {
+        this._getPosition();
+        // recive the information from the form
+        form.addEventListener("submit", this._newWorkout.bind(this));
 
-            L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
-                attribution:
-                    '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            }).addTo(map);
+        // when the type change
+        inputType.addEventListener("change", this._toggleElevationFields.bind(this));
+    }
 
-            map.on("click", function (mapE) {
-                mapEvent = mapE;
-                form.classList.remove("hidden");
-                inputDistance.focus();
-            });
-        },
-        function () {
-            alert("can't find your location");
+    _getPosition() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                this._loadMap.bind(this),
+                function () {
+                    alert("can't find your location");
+                }
+            );
         }
-    );
+    }
+
+    _loadMap(pos) {
+        // console.log(pos.coords);
+        const { latitude, longitude } = pos.coords;
+        const coords = [latitude, longitude];
+        this.#map = L.map("map").setView(coords, 13);
+
+        L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
+            attribution:
+                '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        }).addTo(this.#map);
+
+        this.#map.on("click", this._showForm.bind(this));
+    }
+
+    _showForm(mapE) {
+        this.#mapEvent = mapE;
+        form.classList.remove("hidden");
+        inputDistance.focus();
+    }
+
+    _toggleElevationFields() {
+        inputElevation.closest(".form__row").classList.toggle("form__row--hidden");
+        inputCadence.closest(".form__row").classList.toggle("form__row--hidden");
+    }
+
+    _newWorkout(e) {
+        e.preventDefault();
+        // display marker
+        const { lat, lng } = this.#mapEvent.latlng;
+        L.marker([lat, lng])
+            .addTo(this.#map)
+            .bindPopup(
+                L.popup({
+                    maxWidth: 250,
+                    minWidth: 100,
+                    autoClose: false,
+                    closeOnClick: false,
+                    className: "running-popup",
+                })
+            )
+            .setPopupContent("Workout")
+            .openPopup();
+        // clear input fields
+        inputFields.forEach(field => {
+            field.value = "";
+            field.blur();
+        });
+    }
 }
 
-// recive the information from the form
-form.addEventListener("submit", function (e) {
-    e.preventDefault();
-    // display marker
-    const { lat, lng } = mapEvent.latlng;
-    L.marker([lat, lng])
-        .addTo(map)
-        .bindPopup(
-            L.popup({
-                maxWidth: 250,
-                minWidth: 100,
-                autoClose: false,
-                closeOnClick: false,
-                className: "running-popup",
-            })
-        )
-        .setPopupContent("Workout")
-        .openPopup();
-    // clear input fields
-    inputFields.forEach(field => {
-        field.value = "";
-        field.blur();
-    });
-});
-
-// when the type change
-inputType.addEventListener("change", function () {
-    inputElevation.closest(".form__row").classList.toggle("form__row--hidden");
-    inputCadence.closest(".form__row").classList.toggle("form__row--hidden");
-});
+// map
+const app = new APP();
