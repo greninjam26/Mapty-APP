@@ -70,11 +70,15 @@ class APP {
     #mapEvent;
     #workouts = [];
     constructor() {
+        // get user's location
         this._getPosition();
+
+        // get the information from LocalStorage
+        this._getWorkouts();
+
+        // event listeners
         // recive the information from the form
         form.addEventListener("submit", this._newWorkout.bind(this));
-
-        // when the type change
         inputType.addEventListener("change", this._toggleElevationFields.bind(this));
         workouts.addEventListener("click", this._moveToPopup.bind(this));
     }
@@ -102,6 +106,8 @@ class APP {
         }).addTo(this.#map);
 
         this.#map.on("click", this._showForm.bind(this));
+        // have to put this here, or it will break because the map is not loaded yet
+        this.#workouts.forEach(this._displayWorkoutMarker.bind(this));
     }
 
     _showForm(mapE) {
@@ -155,15 +161,18 @@ class APP {
 
         // add the workout to the list of workouts
         this.#workouts.push(workout);
-        
+
         // display marker
         this._displayWorkoutMarker(workout);
 
         // display workout on the list
-        this._displayWorkout(workout);
+        this._displayWorkoutList(workout);
 
         // clear and hide the form
         this._hideForm();
+
+        // store the new workout in local storage
+        this._storeWorkout();
     }
 
     _displayWorkoutMarker(workout) {
@@ -184,7 +193,7 @@ class APP {
             .openPopup();
     }
 
-    _displayWorkout(workout) {
+    _displayWorkoutList(workout) {
         let html = `
             <li class="workout workout--${workout.type}" data-id="${workout.id}">
                 <h2 class="workout__title">${workout.description}</h2>
@@ -243,6 +252,24 @@ class APP {
                 duration: 1,
             },
         });
+    }
+
+    _storeWorkout() {
+        localStorage.setItem("workouts", JSON.stringify(this.#workouts));
+    }
+
+    _getWorkouts() {
+        const data = JSON.parse(localStorage.getItem("workouts"));
+        if (!data) return;
+        this.#workouts = data;
+        this.#workouts.forEach(this._displayWorkoutList);
+    }
+
+    // this reset the workouts
+    // don't run this in the code, it will infinitly reload the page
+    reset() {
+        localStorage.removeItem("workouts");
+        location.reload();
     }
 }
 
