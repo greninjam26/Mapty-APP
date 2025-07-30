@@ -66,6 +66,7 @@ class Cycling extends Workout {
 // Main APP
 class APP {
     #map;
+    #mapZoomLevel = 13;
     #mapEvent;
     #workouts = [];
     constructor() {
@@ -75,6 +76,7 @@ class APP {
 
         // when the type change
         inputType.addEventListener("change", this._toggleElevationFields.bind(this));
+        workouts.addEventListener("click", this._moveToPopup.bind(this));
     }
 
     _getPosition() {
@@ -92,7 +94,7 @@ class APP {
         // console.log(pos.coords);
         const { latitude, longitude } = pos.coords;
         const coords = [latitude, longitude];
-        this.#map = L.map("map").setView(coords, 13);
+        this.#map = L.map("map").setView(coords, this.#mapZoomLevel);
 
         L.tileLayer("https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png", {
             attribution:
@@ -152,10 +154,8 @@ class APP {
         }
 
         // add the workout to the list of workouts
-        // console.log(distance, duration, type);
         this.#workouts.push(workout);
-        // console.log(workout);
-        console.log(this.#workouts);
+        
         // display marker
         this._displayWorkoutMarker(workout);
 
@@ -229,6 +229,20 @@ class APP {
             `;
         }
         form.insertAdjacentHTML("afterend", html);
+    }
+
+    _moveToPopup(e) {
+        const workoutEl = e.target.closest(".workout");
+        if (!workoutEl) {
+            return;
+        }
+        const workout = this.#workouts.find(work => work.id === workoutEl.dataset.id);
+        this.#map.setView(workout.coords, this.#mapZoomLevel, {
+            animate: true,
+            pan: {
+                duration: 1,
+            },
+        });
     }
 }
 
